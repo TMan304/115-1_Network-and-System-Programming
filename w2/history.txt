@@ -1,0 +1,87 @@
+(base) user@pop-os:~$ docker ps
+CONTAINER ID   IMAGE          COMMAND   CREATED       STATUS          PORTS     NAMES
+cb36188734d2   ubuntu:24.04   "bash"    8 hours ago   Up 14 minutes             nsp-env
+(base) user@pop-os:~$ docker exec -it -w /workspace nsp-env bash
+root@cb36188734d2:/workspace# ls
+README.md  w2
+root@cb36188734d2:/workspace# cd w2
+root@cb36188734d2:/workspace/w2# ls
+demo.txt  homework01.md  pictures
+root@cb36188734d2:/workspace/w2# chmod 640 demo.txt
+root@cb36188734d2:/workspace/w2# ls -l demo.txt
+-rw-r----- 1 root root 0 Sep 18 07:54 demo.txt
+root@cb36188734d2:/workspace/w2# pwd
+/workspace/w2
+root@cb36188734d2:/workspace/w2# ls -l /mnt
+total 0
+root@cb36188734d2:/workspace/w2# touch demo/a/b/hello.txt
+touch: cannot touch 'demo/a/b/hello.txt': No such file or directory
+root@cb36188734d2:/workspace/w2# mkdir demo/a/b/hello.txt
+mkdir: cannot create directory 'demo/a/b/hello.txt': No such file or directory
+root@cb36188734d2:/workspace/w2# mkdir demo/a/b
+mkdir: cannot create directory 'demo/a/b': No such file or directory
+root@cb36188734d2:/workspace/w2# mkdir -p demo/a/b
+root@cb36188734d2:/workspace/w2# touch demo/a/b/hello.txt
+root@cb36188734d2:/workspace/w2# cp demo/a/b/hello.txt demo/a/b/copy.txt
+root@cb36188734d2:/workspace/w2# mv demo/a/b/copy.txt demo/a/copy-moved.txt
+root@cb36188734d2:/workspace/w2# cd demo/a
+root@cb36188734d2:/workspace/w2/demo/a# ls
+b  copy-moved.txt
+root@cb36188734d2:/workspace/w2/demo/a# cd b | ls
+b  copy-moved.txt
+root@cb36188734d2:/workspace/w2/demo/a# cd b
+root@cb36188734d2:/workspace/w2/demo/a/b# ls
+hello.txt
+root@cb36188734d2:/workspace/w2/demo/a/b# cd ..
+root@cb36188734d2:/workspace/w2/demo/a# cd ..
+root@cb36188734d2:/workspace/w2/demo# cd ..
+root@cb36188734d2:/workspace/w2# rm -r demo
+root@cb36188734d2:/workspace/w2# ls
+demo.txt  homework01.md  pictures
+root@cb36188734d2:/workspace/w2# echo "data" > demo.txt
+root@cb36188734d2:/workspace/w2# cat demo.txt
+data
+root@cb36188734d2:/workspace/w2# ln demo.txt hlink hlink.txt
+ln: target 'hlink.txt': No such file or directory
+root@cb36188734d2:/workspace/w2# ln demo.txt hlink.txt
+root@cb36188734d2:/workspace/w2# rm demo.txt
+root@cb36188734d2:/workspace/w2# cat hlink.txt
+data
+root@cb36188734d2:/workspace/w2# ls -l /mnt | >> hlink.txt
+root@cb36188734d2:/workspace/w2# cat hlink.txt
+data
+root@cb36188734d2:/workspace/w2# ls w2 | >> hlink.txt
+ls: cannot access 'w2': No such file or directory
+root@cb36188734d2:/workspace/w2# ls | >> hlink.txt
+root@cb36188734d2:/workspace/w2# cat hlink.txt
+data
+root@cb36188734d2:/workspace/w2# ls -1 /etc | grep '\.conf$\342\200\231
+> ^C
+root@cb36188734d2:/workspace/w2# ls -1 /etc | grep '\.conf
+> ^C
+root@cb36188734d2:/workspace/w2# ls -1 /etc | grep '\.conf'
+adduser.conf
+ca-certificates.conf
+debconf.conf
+deluser.conf
+e2scrub.conf
+gai.conf
+host.conf
+ld.so.conf
+ld.so.conf.d
+libaudit.conf
+mke2fs.conf
+nsswitch.conf
+pam.conf
+resolv.conf
+sysctl.conf
+ucf.conf.dpkg-new
+xattr.conf
+root@cb36188734d2:/workspace/w2# find . -name "*.log" -type f
+root@cb36188734d2:/workspace/w2# find . -name "*.txt" -type f
+./hlink.txt
+root@cb36188734d2:/workspace/w2# grep -E 'MemTotal|MemFree|SwapTotal|SwapFree' /proc/meminfo
+MemTotal:        7527248 kB
+MemFree:         1059004 kB
+SwapTotal:      11721204 kB
+SwapFree:       11031496 kB
