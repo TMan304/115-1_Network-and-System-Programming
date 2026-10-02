@@ -1,0 +1,52 @@
+user@M413IA:~$ cd Downloads/
+user@M413IA:~/Downloads$ ls
+arp-icmp-ex1.pcapng  exer_1
+user@M413IA:~/Downloads$ vim exer_1
+Command 'vim' not found, but can be installed with:
+sudo apt install vim        # version 2:9.1.2141-1ubuntu4.6, or
+sudo apt install neovim     # version 0.11.6-1
+sudo apt install vim-gtk3   # version 2:9.1.2141-1ubuntu4.6
+sudo apt install vim-motif  # version 2:9.1.2141-1ubuntu4.6
+sudo apt install vim-nox    # version 2:9.1.2141-1ubuntu4.6
+user@M413IA:~/Downloads$ vi exer_1
+user@M413IA:~/Downloads$ chmod +x exer_1
+user@M413IA:~/Downloads$ ./exer_1
+[start] Launching two background jobs...
+ - job #1: sleep 5  (PID=34109)
+ - job #2: sleep 7  (PID=34110)
+
+[jobs] Current jobs:
+[1]- 34109 執行中                  sleep 5 &
+[2]+ 34110 執行中                  sleep 7 &
+
+[wait] Waiting for the first job to finish...
+[wait] One job finished (exit code=0)
+
+[term] Sending SIGTERM to any remaining job...
+[done] All background jobs are cleaned up.
+
+[cleanup] Killing remaining background jobs (if any)...
+user@M413IA:~/Downloads$ vi exer_1
+user@M413IA:~/Downloads$ vi exer_1
+user@M413IA:~/Downloads$ vim exer_1
+user@M413IA:~/Downloads$ vim exer_1
+user@M413IA:~/Downloads$ ./exer_1
+[start] Launching two background jobs...
+ - job #1: sleep 5  (PID=38603)
+ - job #2: sleep 7  (PID=38604)
+ - job #3: sleep 9  (PID=38605)
+ - job #4: sleep 11 (PID=38606)
+
+[jobs] Current jobs:
+[1]  38603 執行中                  sleep 5 &
+[2]  38604 執行中                  sleep 7 &
+[3]- 38605 執行中                  sleep 9 &
+[4]+ 38606 執行中                  sleep 11 &
+
+[wait] Waiting for the first job to finish...
+[wait] One job finished (exit code=0)
+
+[term] Sending SIGTERM to any remaining job...
+[done] All background jobs are cleaned up.
+
+[cleanup] Killing remaining background jobs (if any)...
