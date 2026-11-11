@@ -48,6 +48,12 @@ add_executable(client
 )
 target_link_libraries(client PRIVATE nsp)
 
+# Executable: evil_client
+add_executable(evil_client
+    src/evil_client/main.c
+)
+target_link_libraries(evil_client PRIVATE nsp)
+
 # Testing
 enable_testing()
 
@@ -62,3 +68,11 @@ add_test(NAME test_log COMMAND test_log)
 add_executable(test_e2e_echo_quit tests/test_e2e_echo_quit.c)
 target_link_libraries(test_e2e_echo_quit PRIVATE nsp)
 add_test(NAME test_e2e_echo_quit COMMAND test_e2e_echo_quit)
+
+add_executable(test_sysinfo_concurrency tests/test_sysinfo_concurrency.c)
+target_link_libraries(test_sysinfo_concurrency PRIVATE nsp)
+add_test(NAME test_sysinfo_concurrency COMMAND test_sysinfo_concurrency)
+
+add_executable(test_robustness tests/test_robustness.c)
+target_link_libraries(test_robustness PRIVATE nsp)
+add_test(NAME test_robustness COMMAND test_robustness)

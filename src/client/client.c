@@ -21,16 +21,44 @@ typedef struct {
 } nsp_cli_command_t;
 
 /* Forward declarations */
+static int cli_cmd_sysinfo(int sock_fd, const char *arg);
 static int cli_cmd_echo(int sock_fd, const char *arg);
+static int cli_cmd_time(int sock_fd, const char *arg);
+static int cli_cmd_procs(int sock_fd, const char *arg);
+static int cli_cmd_sleep(int sock_fd, const char *arg);
 static int cli_cmd_help(int sock_fd, const char *arg);
 static int cli_cmd_quit(int sock_fd, const char *arg);
 
 static const nsp_cli_command_t g_cli_commands[] = {
     {
+        .name = "sysinfo",
+        .args = "",
+        .help_desc = "Display host system information",
+        .fn = cli_cmd_sysinfo
+    },
+    {
         .name = "echo",
         .args = "<text>",
         .help_desc = "Echoes back the provided text",
         .fn = cli_cmd_echo
+    },
+    {
+        .name = "time",
+        .args = "",
+        .help_desc = "Display server clock and timezone",
+        .fn = cli_cmd_time
+    },
+    {
+        .name = "procs",
+        .args = "",
+        .help_desc = "Display server worker and process stats",
+        .fn = cli_cmd_procs
+    },
+    {
+        .name = "sleep",
+        .args = "<seconds>",
+        .help_desc = "Pause worker child for N seconds (1-60)",
+        .fn = cli_cmd_sleep
     },
     {
         .name = "help",
@@ -47,6 +75,57 @@ static const nsp_cli_command_t g_cli_commands[] = {
 };
 
 static const size_t g_num_cli_commands = sizeof(g_cli_commands) / sizeof(g_cli_commands[0]);
+
+static int cli_send_simple_cmd(int sock_fd, uint8_t msg_type, const char *arg) {
+    const char *msg = arg ? arg : "";
+    uint32_t len = (uint32_t)strlen(msg);
+
+    int rc = nsp_send_frame(sock_fd, msg_type, msg, len);
+    if (rc != NSP_SUCCESS) {
+        fprintf(stderr, "Failed to send request: %d\n", rc);
+        return -1;
+    }
+
+    nsp_header_t resp_hdr;
+    char *resp_payload = NULL;
+    rc = nsp_recv_frame(sock_fd, &resp_hdr, &resp_payload, true);
+    if (rc != NSP_SUCCESS) {
+        fprintf(stderr, "Failed to receive response: %d\n", rc);
+        return -1;
+    }
+
+    if (resp_hdr.msg_type == NSP_MSG_RESP_OK) {
+        printf("%s\n", resp_payload ? resp_payload : "");
+    } else {
+        if (resp_payload && strlen(resp_payload) > 0) {
+            printf("%s\n", resp_payload);
+        } else {
+            printf("Error response (0x%02X)\n", resp_hdr.msg_type);
+        }
+    }
+
+    nsp_frame_free(resp_payload);
+    return 0;
+}
+
+static int cli_cmd_sysinfo(int sock_fd, const char *arg) {
+    (void)arg;
+    return cli_send_simple_cmd(sock_fd, NSP_MSG_SYSINFO, NULL);
+}
+
+static int cli_cmd_time(int sock_fd, const char *arg) {
+    (void)arg;
+    return cli_send_simple_cmd(sock_fd, NSP_MSG_TIME, NULL);
+}
+
+static int cli_cmd_procs(int sock_fd, const char *arg) {
+    (void)arg;
+    return cli_send_simple_cmd(sock_fd, NSP_MSG_PROCS, NULL);
+}
+
+static int cli_cmd_sleep(int sock_fd, const char *arg) {
+    return cli_send_simple_cmd(sock_fd, NSP_MSG_SLEEP, arg ? arg : "");
+}
 
 static int cli_cmd_echo(int sock_fd, const char *arg) {
     const char *msg = arg ? arg : "";
@@ -187,6 +266,10 @@ int nsp_client_run(const nsp_client_config_t *cfg) {
         if (rc == 0) {
             /* Silently notify server to cleanly terminate worker without stdout noise */
             nsp_send_frame(sock_fd, NSP_MSG_QUIT, NULL, 0);
+            nsp_header_t bye_hdr;
+            char *bye_payload = NULL;
+            (void)nsp_recv_frame(sock_fd, &bye_hdr, &bye_payload, true);
+            nsp_frame_free(bye_payload);
         }
         close(sock_fd);
         return 0;

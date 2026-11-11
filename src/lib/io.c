@@ -1,4 +1,5 @@
 #include "nsp/io.h"
+#include "nsp/log.h"
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
@@ -121,6 +122,9 @@ int nsp_recv_frame(int fd, nsp_header_t *hdr_out, char **payload_out, bool valid
         if (status != NSP_SUCCESS) {
             return status;
         }
+    } else if (hdr_out->payload_len > NSP_MAX_PAYLOAD) {
+        /* In unguarded mode, fail allocation deterministically without exhausting host RAM */
+        return NSP_ERR_NOMEM;
     }
 
     /* Guard against 32-bit integer overflow if validate_enabled is false */

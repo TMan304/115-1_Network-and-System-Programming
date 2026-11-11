@@ -10,6 +10,7 @@ static void print_usage(const char *prog) {
     printf("  -m, --max-clients <num> Maximum concurrent client connections (default: %d)\n", NSP_DEFAULT_MAX_CLIENTS);
     printf("  -t, --timeout <sec>     Client idle socket receive timeout (default: %d)\n", NSP_DEFAULT_TIMEOUT_SEC);
     printf("  -l, --log-level <lvl>   Log level (debug, info, warn, error, off)\n");
+    printf("  -v, --verbose           Enable debug logging (sets log-level to debug)\n");
     printf("  --no-reap               Disable SIGCHLD zombie reaping (Robustness #1 demo)\n");
     printf("  --no-validate           Disable binary frame header validation (Robustness #2 demo)\n");
     printf("  --no-timeout            Disable socket receive timeout (Robustness #3 demo)\n");
@@ -49,6 +50,8 @@ int main(int argc, char **argv) {
                 return 1;
             }
             cfg.log_level = nsp_log_level_from_str(argv[i]);
+        } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
+            cfg.log_level = NSP_LOG_DEBUG;
         } else if (strcmp(argv[i], "--no-reap") == 0) {
             cfg.reap_zombies = false;
         } else if (strcmp(argv[i], "--no-validate") == 0) {

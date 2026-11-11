@@ -33,6 +33,9 @@ nsp_log_level_t nsp_log_level_from_str(const char *str);
 void nsp_log_init_from_env(void);
 
 /* Internal log write function called by macros */
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((format(printf, 2, 3)))
+#endif
 void nsp_log_write(nsp_log_level_t level, const char *fmt, ...);
 
 #ifdef __cplusplus

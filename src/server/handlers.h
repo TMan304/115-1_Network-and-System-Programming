@@ -33,7 +33,35 @@ nsp_handler_status_t nsp_server_dispatch_command(
 );
 
 /* Built-in command handlers */
+nsp_handler_status_t handle_cmd_sysinfo(
+    const nsp_server_context_t *ctx,
+    int client_fd,
+    const nsp_header_t *req_hdr,
+    const char *req_payload
+);
+
 nsp_handler_status_t handle_cmd_echo(
+    const nsp_server_context_t *ctx,
+    int client_fd,
+    const nsp_header_t *req_hdr,
+    const char *req_payload
+);
+
+nsp_handler_status_t handle_cmd_time(
+    const nsp_server_context_t *ctx,
+    int client_fd,
+    const nsp_header_t *req_hdr,
+    const char *req_payload
+);
+
+nsp_handler_status_t handle_cmd_procs(
+    const nsp_server_context_t *ctx,
+    int client_fd,
+    const nsp_header_t *req_hdr,
+    const char *req_payload
+);
+
+nsp_handler_status_t handle_cmd_sleep(
     const nsp_server_context_t *ctx,
     int client_fd,
     const nsp_header_t *req_hdr,

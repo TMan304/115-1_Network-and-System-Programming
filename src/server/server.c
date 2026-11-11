@@ -72,8 +72,36 @@ static void untrack_child_pid(nsp_server_context_t *ctx, pid_t pid) {
     }
 }
 
+static bool is_pid_zombie(pid_t pid) {
+    char path[64];
+    snprintf(path, sizeof(path), "/proc/%d/stat", (int)pid);
+    FILE *fp = fopen(path, "r");
+    if (!fp) {
+        return true;
+    }
+    char buf[256];
+    bool zombie = false;
+    if (fgets(buf, sizeof(buf), fp)) {
+        const char *rparen = strrchr(buf, ')');
+        if (rparen && rparen[1] == ' ' && rparen[2] == 'Z') {
+            zombie = true;
+        }
+    }
+    fclose(fp);
+    return zombie;
+}
+
 static void reap_zombies_if_needed(nsp_server_context_t *ctx) {
     if (!ctx->config.reap_zombies) {
+        /* When reaping is disabled, do NOT call waitpid so children remain <defunct> in ps,
+         * but inspect /proc/<pid>/stat so active_clients only counts live non-zombie workers. */
+        int live = 0;
+        for (size_t i = 0; i < ctx->child_pids_cap; i++) {
+            if (ctx->child_pids[i] > 0 && !is_pid_zombie(ctx->child_pids[i])) {
+                live++;
+            }
+        }
+        ctx->active_clients = live;
         return;
     }
 
@@ -84,7 +112,15 @@ static void reap_zombies_if_needed(nsp_server_context_t *ctx) {
         if (ctx->active_clients > 0) {
             ctx->active_clients--;
         }
-        LOG_INFO("Reaped child worker [PID %d] (active clients: %d)", (int)reaped, ctx->active_clients);
+        if (WIFSIGNALED(status)) {
+            LOG_WARN("Child worker [PID %d] terminated abnormally by signal %d (active clients: %d)",
+                     (int)reaped, WTERMSIG(status), ctx->active_clients);
+        } else if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+            LOG_WARN("Child worker [PID %d] exited with error status %d (active clients: %d)",
+                     (int)reaped, WEXITSTATUS(status), ctx->active_clients);
+        } else {
+            LOG_INFO("Reaped child worker [PID %d] (active clients: %d)", (int)reaped, ctx->active_clients);
+        }
     }
     g_reap_needed = 0;
 }
@@ -93,6 +129,7 @@ static void run_child_worker(const nsp_server_context_t *parent_ctx, int client_
     /* Create worker-local copy of context */
     nsp_server_context_t worker_ctx = *parent_ctx;
     worker_ctx.listen_fd = -1;
+    worker_ctx.active_clients = parent_ctx->active_clients + 1;
 
     LOG_INFO("Worker child [PID %d] serving client %s:%d (fd %d)",
              (int)getpid(), client_ip, client_port, client_fd);
@@ -128,6 +165,11 @@ static void run_child_worker(const nsp_server_context_t *parent_ctx, int client_
                          (int)getpid(), worker_ctx.config.timeout_sec);
                 const char *timeout_msg = "Error: Client idle receive timeout exceeded";
                 nsp_send_frame(client_fd, NSP_MSG_RESP_ERROR, timeout_msg, (uint32_t)strlen(timeout_msg));
+            } else if (!worker_ctx.config.validate_packets) {
+                LOG_ERROR("Worker [PID %d] UNGUARDED FATAL: invalid header (magic=0x%04X, len=%u) caused worker failure!",
+                          (int)getpid(), hdr.magic, hdr.payload_len);
+                close(client_fd);
+                _exit(1);
             } else {
                 LOG_WARN("Worker [PID %d] frame receive failed: %d (%s)",
                          (int)getpid(), rc, strerror(errno));
@@ -135,6 +177,14 @@ static void run_child_worker(const nsp_server_context_t *parent_ctx, int client_
                 nsp_send_frame(client_fd, NSP_MSG_RESP_ERROR, err_msg, (uint32_t)strlen(err_msg));
             }
             break;
+        }
+
+        if (!worker_ctx.config.validate_packets && !nsp_header_is_valid(&hdr)) {
+            LOG_ERROR("Worker [PID %d] UNGUARDED FATAL: invalid header (magic=0x%04X, len=%u) caused worker failure!",
+                      (int)getpid(), hdr.magic, hdr.payload_len);
+            nsp_frame_free(payload);
+            close(client_fd);
+            _exit(1);
         }
 
         LOG_DEBUG("Worker [PID %d] received request: %s (len=%u)",
@@ -188,6 +238,7 @@ int nsp_server_run(const nsp_server_config_t *cfg) {
         sa_chld.sa_flags = 0;
         sigaction(SIGCHLD, &sa_chld, NULL);
     } else {
+        signal(SIGCHLD, SIG_DFL);
         LOG_WARN("Zombie reaping disabled (--no-reap); child workers will remain <defunct>");
     }
 

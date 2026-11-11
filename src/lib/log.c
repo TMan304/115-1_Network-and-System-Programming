@@ -59,6 +59,12 @@ static const char *level_to_tag(nsp_log_level_t level) {
 }
 
 void nsp_log_write(nsp_log_level_t level, const char *fmt, ...) {
+#if !NSP_COMPILE_DEBUG
+    if (level == NSP_LOG_DEBUG) {
+        return;
+    }
+#endif
+
     if (level < g_current_level || level >= NSP_LOG_OFF) {
         return;
     }

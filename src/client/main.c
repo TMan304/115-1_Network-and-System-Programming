@@ -10,6 +10,7 @@ static void print_usage(const char *prog) {
     printf("  -p, --port <port>       Server port (default: 9000)\n");
     printf("  -c, --command <cmd>     Execute a single command non-interactively and exit\n");
     printf("  -l, --log-level <lvl>   Log level (debug, info, warn, error, off)\n");
+    printf("  -v, --verbose           Enable debug logging (alias for -l debug)\n");
     printf("  --help                  Show this help message and exit\n");
 }
 
@@ -49,6 +50,8 @@ int main(int argc, char **argv) {
                 return 1;
             }
             cfg.log_level = nsp_log_level_from_str(argv[i]);
+        } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
+            cfg.log_level = NSP_LOG_DEBUG;
         } else if (strcmp(argv[i], "--help") == 0) {
             print_usage(argv[0]);
             return 0;
@@ -58,6 +61,9 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+
+    nsp_log_set_level(cfg.log_level);
+    LOG_DEBUG("Client initialized (host=%s, port=%d)", cfg.host, cfg.port);
 
     return nsp_client_run(&cfg);
 }
