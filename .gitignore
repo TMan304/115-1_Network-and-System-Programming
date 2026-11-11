@@ -1,0 +1,7 @@
+build/
+*.o
+*.so
+*.a
+*.pcap
+compile_commands.json
+.cache/
