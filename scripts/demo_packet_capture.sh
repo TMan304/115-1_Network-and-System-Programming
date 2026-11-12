@@ -73,11 +73,17 @@ TEMP_DIR="$(mktemp -d /tmp/nsp_pcap_XXXXXX)"
 SERVER_PID=""
 TCPDUMP_PID=""
 
+if [[ "${TEST_MODE}" -eq 1 ]]; then
+    OUT_PCAP="${TEMP_DIR}/test_traffic.pcap"
+fi
+rm -f "${OUT_PCAP}" 2>/dev/null || true
+
 cleanup() {
     local code=$?
-    if [[ -n "${TCPDUMP_PID}" ]] && kill -0 "${TCPDUMP_PID}" 2>/dev/null; then
-        kill -INT "${TCPDUMP_PID}" 2>/dev/null || true
-        wait "${TCPDUMP_PID}" 2>/dev/null || true
+    if [[ -n "${TCPDUMP_PID}" ]]; then
+        ${SUDO_PREFIX:-} kill -INT "${TCPDUMP_PID}" 2>/dev/null || true
+        ${SUDO_PREFIX:-} pkill -INT -f "tcpdump.*${PORT}" 2>/dev/null || true
+        ${SUDO_PREFIX:-} kill -9 "${TCPDUMP_PID}" 2>/dev/null || true
     fi
     if [[ -n "${SERVER_PID}" ]] && kill -0 "${SERVER_PID}" 2>/dev/null; then
         kill -INT "${SERVER_PID}" 2>/dev/null || true
@@ -101,19 +107,23 @@ if ! command -v tcpdump >/dev/null 2>&1; then
 fi
 
 # Determine whether live packet capture is possible
+# In test mode (--test), always use deterministic sample trace to prevent hangs or root privilege requirements
 CAN_CAPTURE_LIVE=0
-if [[ "${EUID}" -eq 0 ]]; then
-    CAN_CAPTURE_LIVE=1
-    SUDO_PREFIX=""
-elif sudo -n true 2>/dev/null; then
-    CAN_CAPTURE_LIVE=1
-    SUDO_PREFIX="sudo"
-elif [[ -t 0 ]] && [[ "${TEST_MODE}" -eq 0 ]]; then
-    # Interactive prompt: ask if user wants to authenticate sudo
-    echo -e "${YELLOW}[*] Live packet capture requires root privileges.${RESET}"
-    if sudo -v 2>/dev/null; then
+SUDO_PREFIX=""
+if [[ "${TEST_MODE}" -eq 0 ]]; then
+    if [[ "${EUID}" -eq 0 ]]; then
+        CAN_CAPTURE_LIVE=1
+        SUDO_PREFIX=""
+    elif sudo -n true 2>/dev/null; then
         CAN_CAPTURE_LIVE=1
         SUDO_PREFIX="sudo"
+    elif [[ -t 0 ]]; then
+        # Interactive prompt: ask if user wants to authenticate sudo
+        echo -e "${YELLOW}[*] Live packet capture requires root privileges.${RESET}"
+        if sudo -v 2>/dev/null; then
+            CAN_CAPTURE_LIVE=1
+            SUDO_PREFIX="sudo"
+        fi
     fi
 fi
 
@@ -138,14 +148,26 @@ if [[ "${CAN_CAPTURE_LIVE}" -eq 1 ]]; then
     "${CLIENT_BIN}" -p "${PORT}" -c "quit" > /dev/null 2>&1 || true
     sleep 0.5
 
-    # Terminate server and tcpdump
+    # Terminate server
     kill -INT "${SERVER_PID}" 2>/dev/null || true
     wait "${SERVER_PID}" 2>/dev/null || true
     SERVER_PID=""
 
-    ${SUDO_PREFIX} kill -INT "${TCPDUMP_PID}" 2>/dev/null || true
-    wait "${TCPDUMP_PID}" 2>/dev/null || true
-    TCPDUMP_PID=""
+    # Terminate tcpdump without unbounded blocking wait
+    if [[ -n "${TCPDUMP_PID}" ]]; then
+        ${SUDO_PREFIX} kill -INT "${TCPDUMP_PID}" 2>/dev/null || true
+        ${SUDO_PREFIX} pkill -INT -f "tcpdump.*${PORT}" 2>/dev/null || true
+        for _ in {1..15}; do
+            if ! kill -0 "${TCPDUMP_PID}" 2>/dev/null; then
+                break
+            fi
+            sleep 0.1
+        done
+        if kill -0 "${TCPDUMP_PID}" 2>/dev/null; then
+            ${SUDO_PREFIX} kill -9 "${TCPDUMP_PID}" 2>/dev/null || true
+        fi
+        TCPDUMP_PID=""
+    fi
 
     # Fix ownership of pcap file if created with sudo
     if [[ -n "${SUDO_PREFIX}" ]] && [[ -f "${OUT_PCAP}" ]]; then
