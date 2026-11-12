@@ -209,10 +209,11 @@ The test suite is integrated with CMake CTest (`ctest --test-dir build --output-
 
 ## 6. Personal Reflection
 
-- **Process Isolation (`fork()`) vs. Threading:** Providing each connection with an independent address space eliminates shared-memory data races and encapsulates worker crashes without mutexes, trading off higher process spawning latency and serialization overhead.
-- **Asynchronous Signal Handling (`SIGCHLD`):** Coalesced signals require non-blocking `waitpid(-1, WNOHANG)` loops and `errno` preservation inside the handler to prevent zombie accumulation without stalling the parent event loop.
-- **Stream Framing over TCP:** Because TCP delivers an unstructured byte stream, fixed-size headers with explicit payload lengths and iterative I/O loops handling `EINTR` and partial reads are mandatory for protocol reliability.
-- **Defensive Programming & Adversarial Testing:** Developing `evil_client` underscored that resilient servers must explicitly reject invalid headers, cap payload sizes, enforce socket timeouts, and throttle admissions to withstand malformed traffic and resource starvation.
+For this assignment, I tried a full vibe-coding workflow using the Antigravity CLI, adopting an orchestration setup where I directed Gemini-4-Argon, which in turn delegated tasks to Gemini-3.8-flash. Throughout the entire process, I relied on `mattpocock/skills` to plan the architecture and write the code, while occasionally toggling the `caveman` skill during discussions to conserve token usage.
+
+Although the overall workflow felt effortless, I still hit a few roadblocks. The biggest issue was that the generated outputs frequently diverged from my expectations—largely because I got a bit lazy and treated my prompts like wish-making rather than precise specifications. Fortunately, once I clearly articulated the exact fixes needed and paired them with a dedicated bug-fixing skill, everything came together cleanly.
+
+This vibe-coding experience taught me that while AI agents can dramatically accelerate boilerplate and architectural scaffolding, they still depend heavily on sharp, unambiguous problem framing. Moving forward, I plan to keep using this multi-model delegation pattern, but I will front-load more effort into writing clear edge-case constraints and test assertions before letting the models generate code.
 
 ---
 
