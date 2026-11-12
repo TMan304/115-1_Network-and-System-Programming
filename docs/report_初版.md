@@ -3,8 +3,8 @@
 **Course:** 115-1 Network and System Programming  
 **Assignment:** Midterm Practical Project & System Implementation  
 **Project Title:** High-Performance Remote System Monitor with Fork-Based Concurrency, Shared Dynamic Library, and Protocol Robustness  
-**Author:** `[Student Name]`  
-**Student ID:** `[Student ID]`  
+**Author:** 王界誠  
+**Student ID:** 112AB0050  
 **Date:** November 2026  
 **Operating Environment:** Linux (x86_64), GCC/Clang, CMake 3.16+  
 
