@@ -76,3 +76,5 @@ add_test(NAME test_sysinfo_concurrency COMMAND test_sysinfo_concurrency)
 add_executable(test_robustness tests/test_robustness.c)
 target_link_libraries(test_robustness PRIVATE nsp)
 add_test(NAME test_robustness COMMAND test_robustness)
+
+add_test(NAME test_demo_scripts COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_demo_scripts.sh")
