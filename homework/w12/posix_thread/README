@@ -1,0 +1,1 @@
+gcc -o thd6 thd6.c -pthread
